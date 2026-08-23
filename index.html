@@ -15,6 +15,7 @@
     <button data-ekran="istatistik">İstatistik</button>
     <button data-ekran="ai">AI Lab</button>
     <button data-ekran="ayar">Ayarlar</button>
+    <button id="tema-btn" class="tema" title="Temayı değiştir">Açık tema</button>
   </nav>
 </header>
 
@@ -22,31 +23,29 @@
 
 <!-- ================= ANA SAYFA ================= -->
 <section id="ev" class="ekran aktif">
-  <div class="hero">
-    <h1>Orta-zor seviye KPSS denemesi</h1>
-    <p>Çıkmış soru mantığıyla hazırlanmış soru bankası + yapay zekâ ile sınırsız benzer soru üretimi.</p>
+
+  <div class="ozet">
+    <div><strong id="oz-bugun">0</strong><small>bugün çözülen</small></div>
+    <div><strong id="oz-seri">0</strong><small>günlük seri</small></div>
+    <div><strong id="oz-tekrar">0</strong><small>tekrar zamanı gelen</small></div>
+    <div><strong id="oz-yanlis">0</strong><small>yanlış havuzu</small></div>
+    <div><strong id="oz-banka">0</strong><small>bankadaki soru</small></div>
   </div>
 
   <div class="kartlar">
+
     <div class="kart">
       <h3>Deneme Sınavı</h3>
-      <p>Süreli, karışık sorular. Sonunda net ve konu analizi.</p>
-      <div class="satir">
-        <label>Ders
-          <select id="ev-ders"></select>
-        </label>
-        <label>Zorluk
-          <select id="ev-zorluk">
-            <option value="0">Orta + Zor</option>
-            <option value="2">Sadece orta</option>
-            <option value="3">Sadece zor</option>
-          </select>
-        </label>
-      </div>
+      <p>Kendi filtrenle süreli sınav. Sonunda net, konu analizi ve süre dökümü.</p>
+      <label>Ders
+        <select id="ev-ders"></select>
+      </label>
+      <span class="alan-adi">Zorluk seviyeleri</span>
+      <div class="zorluk-sec" id="ev-zorluk"></div>
       <div class="satir">
         <label>Soru sayısı
           <select id="ev-adet">
-            <option>10</option><option selected>20</option><option>30</option><option>40</option>
+            <option>10</option><option selected>20</option><option>30</option><option>40</option><option>60</option>
           </select>
         </label>
         <label>Süre (dk)
@@ -62,55 +61,90 @@
       <button class="birincil" id="btn-deneme">Denemeyi Başlat</button>
     </div>
 
-    <div class="kart">
-      <h3>Konu Çalışması</h3>
-      <p>Her soruda anında doğru cevap ve çözüm. Süre yok, baskı yok.</p>
+    <div class="kart vurgulu">
+      <h3>KPSS Formatı</h3>
+      <p>Gerçek sınavın ders dağılımıyla karma deneme: Türkçe %25, Matematik %25, Tarih %22,5, Coğrafya %15, Vatandaşlık %12,5. Süre otomatik ayarlanır.</p>
       <div class="satir">
-        <label>Ders
-          <select id="calis-ders"></select>
-        </label>
-        <label>Konu
-          <select id="calis-konu"></select>
+        <label>Soru sayısı
+          <select id="fmt-adet">
+            <option value="30">30 soru · 33 dk</option>
+            <option value="60" selected>60 soru · 65 dk</option>
+            <option value="120">120 soru · 130 dk</option>
+          </select>
         </label>
       </div>
+      <span class="alan-adi">Zorluk seviyeleri</span>
+      <div class="zorluk-sec" id="fmt-zorluk"></div>
+      <button class="birincil" id="btn-format">Formatı Başlat</button>
+    </div>
+
+    <div class="kart">
+      <h3>Konu Çalışması</h3>
+      <p>Süre yok. Cevabı işaretler işaretlemez doğru şık, detaylı çözüm ve püf noktası açılır. İstersen cevaplamadan önce ipucu alabilirsin.</p>
+      <div class="satir">
+        <label>Ders <select id="calis-ders"></select></label>
+        <label>Konu <select id="calis-konu"></select></label>
+      </div>
+      <span class="alan-adi">Zorluk seviyeleri</span>
+      <div class="zorluk-sec" id="calis-zorluk"></div>
       <button class="birincil" id="btn-calis">Çalışmaya Başla</button>
     </div>
 
     <div class="kart">
-      <h3>Yanlışlarım</h3>
-      <p>Daha önce yanlış yaptığın sorular tekrar karşına gelir. Doğru yaparsan havuzdan düşer.</p>
-      <p class="rakam"><span id="yanlis-sayi">0</span> soru bekliyor</p>
-      <button class="birincil" id="btn-yanlis">Tekrar Et</button>
+      <h3>Akıllı Tekrar</h3>
+      <p>Aralıklı tekrar sistemi: her doğru cevaptan sonra soru daha uzun bir süre sonra karşına çıkar, yanlışta baştan başlar. Unutmadan önce hatırlatır.</p>
+      <p class="rakam"><span id="tekrar-sayi">0</span> soru tekrar zamanında</p>
+      <button class="birincil" id="btn-tekrar">Tekrara Başla</button>
     </div>
+
+    <div class="kart">
+      <h3>Yanlışlarım</h3>
+      <p>Yanlış yaptığın ve henüz bir kez bile doğru yapamadığın sorular. Doğru yapınca havuzdan düşer.</p>
+      <p class="rakam"><span id="yanlis-sayi">0</span> soru bekliyor</p>
+      <button class="birincil" id="btn-yanlis">Yanlışları Çöz</button>
+    </div>
+
   </div>
 </section>
 
 <!-- ================= SINAV ================= -->
 <section id="sinav" class="ekran">
   <div class="sinav-ust">
-    <div>
+    <div class="basliklar">
       <span class="etiket" id="sinav-mod">Deneme</span>
       <span class="etiket gri" id="sinav-ders"></span>
     </div>
     <div class="sayac" id="sayac"></div>
     <button class="ikincil" id="btn-bitir">Sınavı Bitir</button>
   </div>
+  <div class="ilerleme"><i id="ilerleme-bar"></i></div>
 
   <div class="sinav-govde">
     <div class="soru-alan">
-      <div class="soru-no">Soru <span id="soru-idx">1</span> / <span id="soru-toplam">20</span>
+      <div class="soru-no">
+        <span>Soru <b id="soru-idx">1</b> / <span id="soru-toplam">20</span></span>
         <span class="etiket gri" id="soru-konu"></span>
-        <span class="etiket zor" id="soru-zorluk"></span>
+        <span class="etiket seviye" id="soru-zorluk"></span>
+        <button class="mini" id="btn-bildir" title="Soruyu hatalı olarak işaretle ve bankadan gizle">Hatalı soru</button>
       </div>
       <div class="soru-metin" id="soru-metin"></div>
       <div class="secenekler" id="secenekler"></div>
+
+      <div class="yardim">
+        <button class="mini" id="btn-ipucu">Püf noktasını göster</button>
+        <button class="mini" id="btn-ai-acikla">AI ile açıkla</button>
+      </div>
+      <div class="ipucu-kutu" id="ipucu" hidden></div>
       <div class="cozum" id="cozum" hidden></div>
+      <div class="ai-kutu" id="ai-aciklama" hidden></div>
+
       <div class="sinav-alt">
         <button class="ikincil" id="btn-onceki">← Önceki</button>
         <button class="ikincil" id="btn-isaret">Sonra bak</button>
         <button class="birincil" id="btn-sonraki">Sonraki →</button>
       </div>
     </div>
+
     <aside class="palet">
       <h4>Sorular</h4>
       <div id="palet"></div>
@@ -119,6 +153,7 @@
         <span><i class="p-isaret"></i> işaretli</span>
         <span><i class="p-bos"></i> boş</span>
       </div>
+      <p class="kisayol">Kısayol: A-E şık seçer, ← → soru değiştirir.</p>
     </aside>
   </div>
 </section>
@@ -126,12 +161,28 @@
 <!-- ================= SONUÇ ================= -->
 <section id="sonuc" class="ekran">
   <h2>Sonuç</h2>
-  <div class="skor" id="skor"></div>
+  <div class="sonuc-ust">
+    <div id="donut"></div>
+    <div class="skor" id="skor"></div>
+  </div>
   <h3>Ders bazlı</h3>
   <div id="ders-tablo"></div>
   <h3>Zayıf konular</h3>
   <div id="zayif"></div>
+  <h3>Süre analizi</h3>
+  <div id="sure-analiz"></div>
+  <div class="satir">
+    <button class="ikincil" id="btn-ai-yorum">AI'dan performans yorumu al</button>
+    <button class="ikincil" id="btn-yanlislari-coz">Yanlışlarımı hemen tekrar çöz</button>
+  </div>
+  <div id="ai-yorum" class="ai-kutu" hidden></div>
   <h3>Soru soru inceleme</h3>
+  <div class="satir filtre">
+    <button class="mini aktif" data-fil="hepsi">Hepsi</button>
+    <button class="mini" data-fil="yanlis">Yanlışlar</button>
+    <button class="mini" data-fil="bos">Boşlar</button>
+    <button class="mini" data-fil="dogru">Doğrular</button>
+  </div>
   <div id="inceleme"></div>
   <button class="birincil" id="btn-ev">Ana Sayfaya Dön</button>
 </section>
@@ -140,24 +191,45 @@
 <section id="istatistik" class="ekran">
   <h2>İstatistik</h2>
   <div class="skor" id="genel-skor"></div>
+
+  <h3>Deneme gelişimin</h3>
+  <div id="grafik"></div>
+
   <h3>Ders bazlı başarı</h3>
   <div id="ist-ders"></div>
+
+  <h3>Zorluk seviyesine göre başarı</h3>
+  <div id="ist-zorluk"></div>
+
   <h3>En çok yanlış yapılan konular</h3>
   <div id="ist-konu"></div>
-  <button class="ikincil" id="btn-sifirla">İstatistikleri Sıfırla</button>
+
+  <h3>Son denemeler</h3>
+  <div id="ist-gecmis"></div>
+
+  <div class="satir">
+    <button class="ikincil" id="btn-ai-koc">AI koçtan çalışma planı iste</button>
+    <button class="ikincil tehlike" id="btn-sifirla">İstatistikleri sıfırla</button>
+  </div>
+  <div id="ai-koc" class="ai-kutu" hidden></div>
 </section>
 
 <!-- ================= AI LAB ================= -->
 <section id="ai" class="ekran">
   <h2>AI Lab</h2>
-  <p class="aciklama">Çıkmış soruları yapıştır: yapay zekâ hangi konudan, hangi kalıpla sorulduğunu çözümlesin ve aynı tarzda yeni sorular üretsin. Üretilen sorular soru bankana eklenir.</p>
+  <p class="aciklama">Çıkmış soruları yapıştır: yapay zekâ hangi konudan, hangi kalıpla sorulduğunu çözümlesin ve aynı tarzda yeni sorular üretsin. Üretilen sorular çözümü ve püf noktasıyla birlikte soru bankana eklenir.</p>
 
   <div class="kart">
     <h3>1 · Çıkmış soru analizi</h3>
     <textarea id="ai-metin" rows="8" placeholder="Çıkmış soruları buraya yapıştır (birden fazla olabilir)..."></textarea>
     <div class="satir">
+      <label>Üretilecek soru sayısı
+        <select id="ai-benzer-adet"><option>3</option><option selected>5</option><option>10</option></select>
+      </label>
+    </div>
+    <div class="satir">
       <button class="ikincil" id="btn-analiz">Analiz Et</button>
-      <button class="birincil" id="btn-benzer">Bu Sorulara Benzer Soru Üret</button>
+      <button class="birincil" id="btn-benzer">Benzer Soru Üret</button>
     </div>
   </div>
 
@@ -169,7 +241,12 @@
     </div>
     <div class="satir">
       <label>Zorluk
-        <select id="ai-zorluk"><option value="orta">Orta</option><option value="zor" selected>Zor</option></select>
+        <select id="ai-zorluk">
+          <option value="1">Kolay</option>
+          <option value="2">Orta</option>
+          <option value="3" selected>Zor</option>
+          <option value="4">Çok Zor</option>
+        </select>
       </label>
       <label>Adet
         <select id="ai-adet"><option>3</option><option selected>5</option><option>10</option></select>
@@ -178,23 +255,50 @@
     <button class="birincil" id="btn-uret">Soru Üret</button>
   </div>
 
+  <div class="kart">
+    <h3>3 · Zayıf konularımdan üret</h3>
+    <p>İstatistiklerine bakıp en çok yanlış yaptığın konulardan hedefli soru üretir.</p>
+    <p class="rakam" id="zayif-ozet">Henüz yeterli veri yok.</p>
+    <button class="birincil" id="btn-zayif-uret">Zayıf Konulardan 5 Soru Üret</button>
+  </div>
+
   <div id="ai-durum" class="durum"></div>
   <div id="ai-cikti"></div>
 
   <div class="kart">
     <h3>Üretilen sorular</h3>
     <p class="rakam"><span id="uretilen-sayi">0</span> soru bankaya eklendi</p>
-    <button class="ikincil" id="btn-uretilen-indir">JSON olarak indir</button>
-    <button class="ikincil tehlike" id="btn-uretilen-sil">Üretilenleri sil</button>
+    <div class="satir">
+      <button class="ikincil" id="btn-uretilen-indir">JSON olarak indir</button>
+      <button class="ikincil tehlike" id="btn-uretilen-sil">Üretilenleri sil</button>
+    </div>
   </div>
 </section>
 
 <!-- ================= AYARLAR ================= -->
 <section id="ayar" class="ekran">
   <h2>Ayarlar</h2>
+
+  <div class="kart">
+    <h3>Sınav tercihleri</h3>
+    <label>Puanlama
+      <select id="ay-net">
+        <option value="yok">Yanlış doğruyu götürmesin</option>
+        <option value="dortbir">4 yanlış 1 doğruyu götürsün</option>
+      </select>
+    </label>
+    <label>Günlük soru hedefi
+      <select id="ay-hedef">
+        <option>10</option><option selected>20</option><option>40</option><option>60</option><option>100</option>
+      </select>
+    </label>
+    <button class="birincil" id="btn-tercih-kaydet">Kaydet</button>
+    <div id="tercih-durum" class="durum"></div>
+  </div>
+
   <div class="kart">
     <h3>Yapay zekâ bağlantısı</h3>
-    <p class="aciklama">Anahtar sadece bu tarayıcıda saklanır, hiçbir yere gönderilmez. Gemini'nin ücretsiz katmanı bu iş için yeterlidir.</p>
+    <p class="aciklama">Anahtar yalnızca bu tarayıcıda saklanır, hiçbir sunucuya gönderilmez. Gemini'nin ücretsiz katmanı bu iş için yeterlidir.</p>
     <label>Sağlayıcı
       <select id="ay-saglayici">
         <option value="gemini">Google Gemini</option>
@@ -207,11 +311,27 @@
     <div id="ayar-durum" class="durum"></div>
     <p class="aciklama">Anahtar alma: Gemini → aistudio.google.com/apikey · Anthropic → console.anthropic.com</p>
   </div>
+
+  <div class="kart">
+    <h3>Verilerim</h3>
+    <p class="aciklama">Tüm ilerleme tarayıcıda saklanır. Başka bir bilgisayara taşımak ya da yedeklemek için dışa aktar.</p>
+    <div class="satir">
+      <button class="ikincil" id="btn-yedek-al">Yedek indir</button>
+      <button class="ikincil" id="btn-yedek-yukle">Yedekten yükle</button>
+      <button class="ikincil" id="btn-gizli-geri">Gizlenen soruları geri getir (<span id="gizli-sayi">0</span>)</button>
+    </div>
+    <input type="file" id="yedek-dosya" accept="application/json" hidden>
+    <div id="veri-durum" class="durum"></div>
+  </div>
 </section>
 
 </main>
 
-<script src="data/sorular.js"></script>
+<script src="data/turkce.js"></script>
+<script src="data/matematik.js"></script>
+<script src="data/tarih.js"></script>
+<script src="data/cografya.js"></script>
+<script src="data/vatandaslik.js"></script>
 <script src="ai.js"></script>
 <script src="app.js"></script>
 </body>
