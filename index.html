@@ -4,15 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KPSS Lab</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
-  <div class="logo">KPSS<span>Lab</span></div>
+  <button class="logo" id="logo" title="Ana sayfaya dön">KPSS<span>Lab</span></button>
   <nav>
     <button data-ekran="ev" class="aktif">Ana Sayfa</button>
+    <button data-ekran="kart">Kartlar</button>
     <button data-ekran="istatistik">İstatistik</button>
+    <button data-ekran="puan">Puan</button>
     <button data-ekran="ai">AI Lab</button>
     <button data-ekran="ayar">Ayarlar</button>
     <button id="tema-btn" class="tema" title="Temayı değiştir">Açık tema</button>
@@ -58,6 +65,7 @@
           </select>
         </label>
       </div>
+      <label class="onay"><input type="checkbox" id="ev-tempo"> Tempo modu — soru başına 65 saniye</label>
       <button class="birincil" id="btn-deneme">Denemeyi Başlat</button>
     </div>
 
@@ -75,6 +83,7 @@
       </div>
       <span class="alan-adi">Zorluk seviyeleri</span>
       <div class="zorluk-sec" id="fmt-zorluk"></div>
+      <label class="onay"><input type="checkbox" id="fmt-tempo"> Tempo modu — soru başına 65 saniye</label>
       <button class="birincil" id="btn-format">Formatı Başlat</button>
     </div>
 
@@ -113,6 +122,7 @@
     <div class="basliklar">
       <span class="etiket" id="sinav-mod">Deneme</span>
       <span class="etiket gri" id="sinav-ders"></span>
+      <span class="etiket tempo" id="tempo" hidden></span>
     </div>
     <div class="sayac" id="sayac"></div>
     <button class="ikincil" id="btn-bitir">Sınavı Bitir</button>
@@ -128,6 +138,7 @@
         <button class="mini" id="btn-bildir" title="Soruyu hatalı olarak işaretle ve bankadan gizle">Hatalı soru</button>
       </div>
       <div class="soru-metin" id="soru-metin"></div>
+      <div class="gorsel" id="soru-gorsel" hidden></div>
       <div class="secenekler" id="secenekler"></div>
 
       <div class="yardim">
@@ -187,6 +198,36 @@
   <button class="birincil" id="btn-ev">Ana Sayfaya Dön</button>
 </section>
 
+<!-- ================= KARTLAR ================= -->
+<section id="kart" class="ekran">
+  <h2>Hızlı Tekrar Kartları</h2>
+  <p class="aciklama">Deyimler, atasözleri, tarih yılları, anayasa sayıları, coğrafya "en"leri ve matematik formülleri. Karta dokun, cevabı gör, kendini dürüstçe değerlendir. Bilemediğin kartlar aynı turda tekrar karşına çıkar.</p>
+
+  <div class="satir">
+    <label>Kategori <select id="kart-kategori"></select></label>
+    <button class="birincil" id="btn-kart-basla">Desteyi Başlat</button>
+  </div>
+
+  <div id="kart-alan" hidden>
+    <div class="kart-ust">
+      <span class="etiket gri" id="kart-kat"></span>
+      <span class="etiket" id="kart-ilerleme"></span>
+      <button class="mini" id="btn-kart-bitir">Desteyi kapat</button>
+    </div>
+    <div class="flashcard" id="flashcard">
+      <div class="fc-yuz" id="fc-on"></div>
+      <div class="fc-arka" id="fc-arka" hidden></div>
+      <p class="fc-ipucu" id="fc-ipucu">Cevabı görmek için karta dokun</p>
+    </div>
+    <div class="satir" id="kart-butonlar" hidden>
+      <button class="ikincil tehlike" id="btn-kart-bilmedim">Bilmiyordum</button>
+      <button class="birincil" id="btn-kart-bildim">Biliyordum</button>
+    </div>
+  </div>
+
+  <div id="kart-ozet"></div>
+</section>
+
 <!-- ================= İSTATİSTİK ================= -->
 <section id="istatistik" class="ekran">
   <h2>İstatistik</h2>
@@ -212,6 +253,50 @@
     <button class="ikincil tehlike" id="btn-sifirla">İstatistikleri sıfırla</button>
   </div>
   <div id="ai-koc" class="ai-kutu" hidden></div>
+</section>
+
+<!-- ================= PUAN HESAPLAYICI ================= -->
+<section id="puan" class="ekran">
+  <h2>Hedef Puan Hesaplayıcı</h2>
+  <p class="aciklama">KPSS Lisans Genel Yetenek – Genel Kültür (P3) için netten puana kaba tahmin. Gerçek puanı ÖSYM, o yılki ortalama ve standart sapmaya göre hesaplar; buradaki sonuç geçmiş yıl tablolarına dayanan yaklaşık bir değerdir (±3-4 puan).</p>
+
+  <div class="kart">
+    <h3>Netlerin</h3>
+    <div class="satir">
+      <label>Genel Yetenek neti (Türkçe + Matematik, 60 soru)
+        <input type="number" id="pn-gy" min="0" max="60" step="0.25" value="35">
+      </label>
+      <label>Genel Kültür neti (Tarih + Coğrafya + Vatandaşlık, 60 soru)
+        <input type="number" id="pn-gk" min="0" max="60" step="0.25" value="35">
+      </label>
+    </div>
+    <div class="satir">
+      <button class="ikincil" id="btn-son-denemeden">Son denemenin netleriyle doldur</button>
+    </div>
+  </div>
+
+  <div class="sonuc-ust">
+    <div id="puan-donut"></div>
+    <div class="skor" id="puan-skor"></div>
+  </div>
+
+  <div class="kart">
+    <h3>Hedefin</h3>
+    <div class="satir">
+      <label>Hedeflediğin puan
+        <input type="number" id="pn-hedef" min="30" max="100" step="0.5" value="80">
+      </label>
+    </div>
+    <div id="hedef-sonuc" class="ipucu-kutu"></div>
+  </div>
+
+  <h3>Net – puan tablosu</h3>
+  <div id="puan-tablo"></div>
+
+  <div class="kart">
+    <h3>Kaba tahmin nasıl hesaplanıyor?</h3>
+    <p>Geçmiş yılların net–puan tablolarına oturtulmuş doğrusal bir yaklaşım kullanılıyor: <b>puan ≈ 39 + 0,5 × toplam net</b>. Gerçek hesapta her testin standart puanı (T = 50 + 10·(net − ortalama)/standart sapma) ayrı çıkarılır, ağırlıklandırılır ve o yılın aday havuzuna göre ölçeklenir. Bu yüzden aynı net, her yıl birkaç puan farklı karşılık bulabilir.</p>
+  </div>
 </section>
 
 <!-- ================= AI LAB ================= -->
@@ -292,6 +377,8 @@
         <option>10</option><option selected>20</option><option>40</option><option>60</option><option>100</option>
       </select>
     </label>
+    <label class="onay"><input type="checkbox" id="ay-ses" checked> Ses efektleri (doğru-yanlış tonu, bitiş melodisi)</label>
+    <label class="onay"><input type="checkbox" id="ay-animasyon" checked> Animasyon ve konfeti</label>
     <button class="birincil" id="btn-tercih-kaydet">Kaydet</button>
     <div id="tercih-durum" class="durum"></div>
   </div>
@@ -314,7 +401,7 @@
 
   <div class="kart">
     <h3>Verilerim</h3>
-    <p class="aciklama">Tüm ilerleme tarayıcıda saklanır. Başka bir bilgisayara taşımak ya da yedeklemek için dışa aktar.</p>
+    <p class="aciklama">Tüm ilerleme tarayıcıda saklanır. Başka bir cihaza taşımak ya da yedeklemek için dışa aktar.</p>
     <div class="satir">
       <button class="ikincil" id="btn-yedek-al">Yedek indir</button>
       <button class="ikincil" id="btn-yedek-yukle">Yedekten yükle</button>
@@ -323,15 +410,28 @@
     <input type="file" id="yedek-dosya" accept="application/json" hidden>
     <div id="veri-durum" class="durum"></div>
   </div>
+
+  <div class="kart">
+    <h3>Telefona kurma</h3>
+    <p>Uygulama bir web sitesi adresinden açıldığında telefona kurulabilir. Android'de Chrome ile aç → sağ üstteki üç nokta → <b>"Uygulamayı yükle"</b> ya da <b>"Ana ekrana ekle"</b>. Kurulduktan sonra kendi ikonuyla açılır, tam ekran çalışır ve internet olmadan da soru çözebilirsin.</p>
+    <p class="rakam" id="pwa-durum">Kurulum durumu kontrol ediliyor...</p>
+    <button class="birincil" id="btn-kur" hidden>Uygulamayı Yükle</button>
+  </div>
 </section>
 
 </main>
 
 <script src="data/turkce.js"></script>
+<script src="data/turkce2.js"></script>
 <script src="data/matematik.js"></script>
+<script src="data/matematik2.js"></script>
 <script src="data/tarih.js"></script>
+<script src="data/tarih2.js"></script>
 <script src="data/cografya.js"></script>
+<script src="data/cografya2.js"></script>
 <script src="data/vatandaslik.js"></script>
+<script src="data/kartlar.js"></script>
+<script src="efekt.js"></script>
 <script src="ai.js"></script>
 <script src="app.js"></script>
 </body>

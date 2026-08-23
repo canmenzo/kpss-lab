@@ -28,7 +28,8 @@ label input,label select{margin-top:4px}
 .alan-adi{display:block;font-size:13px;color:var(--soluk);margin-bottom:6px}
 
 header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;border-bottom:1px solid var(--cizgi);background:var(--yuzey);position:sticky;top:0;z-index:5;flex-wrap:wrap}
-.logo{font-weight:800;letter-spacing:-.5px;font-size:20px}
+.logo{font-weight:800;letter-spacing:-.5px;font-size:20px;background:none;border:none;color:inherit;padding:4px 2px;cursor:pointer}
+.logo:hover span{filter:brightness(1.25)}
 .logo span{color:var(--vurgu)}
 nav{display:flex;gap:6px;flex-wrap:wrap}
 nav button{background:none;color:var(--soluk);padding:8px 12px}
@@ -147,4 +148,111 @@ details .secenek{cursor:default}
   #palet{grid-template-columns:repeat(10,1fr)}
   main{padding:20px 14px 60px}
   .soru-alan{padding:16px}
+}
+
+/* onay kutusu */
+.onay{display:flex;align-items:center;gap:8px;background:var(--yuzey2);border:1px solid var(--cizgi);
+  border-radius:10px;padding:9px 12px;margin-bottom:12px;cursor:pointer;color:var(--metin);font-size:13px}
+.onay input{width:auto;margin:0;accent-color:var(--vurgu)}
+.onay:has(input:checked){border-color:var(--vurgu)}
+
+/* tempo etiketi */
+.etiket.tempo{background:color-mix(in srgb,var(--mor) 20%,transparent);color:var(--mor)}
+.etiket.tempo.kritik{background:color-mix(in srgb,var(--kirmizi) 22%,transparent);color:var(--kirmizi)}
+
+/* soru görseli (tablo / grafik) */
+.gorsel{overflow-x:auto;margin-bottom:18px;background:var(--yuzey2);border:1px solid var(--cizgi);
+  border-radius:10px;padding:14px}
+.gorsel table{margin:0;font-size:13px;min-width:280px}
+.gorsel th,.gorsel td{border-bottom:1px solid var(--cizgi);white-space:nowrap}
+.gorsel table caption{caption-side:top;text-align:left;font-size:12px;color:var(--soluk);padding-bottom:8px}
+.gorsel svg{max-width:100%;height:auto;display:block;margin:0 auto}
+.gorsel figcaption{font-size:12px;color:var(--soluk);text-align:center;margin-top:8px}
+
+/* flashcard */
+.kart-ust{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:18px 0 12px}
+.kart-ust .mini{margin-left:auto}
+.flashcard{background:var(--yuzey);border:1px solid var(--cizgi);border-radius:var(--r);padding:34px 24px;
+  min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  text-align:center;cursor:pointer;transition:border-color .15s}
+.flashcard:hover{border-color:var(--vurgu)}
+.fc-yuz{font-size:22px;font-weight:600;line-height:1.4}
+.fc-arka{font-size:16px;color:var(--metin);border-top:1px solid var(--cizgi);padding-top:16px;
+  width:100%;max-width:640px;line-height:1.6}
+.fc-ipucu{font-size:12px;color:var(--soluk);margin:0}
+#kart-butonlar{margin-top:14px}
+#kart-butonlar button{flex:1}
+
+/* puan tablosu vurgusu */
+tr.simdiki td{background:color-mix(in srgb,var(--vurgu) 12%,transparent);font-weight:600}
+
+/* ============ HAREKET VE ÖDÜL KATMANI ============ */
+:root{ --gecis:180ms cubic-bezier(.2,.8,.3,1); --golge:0 1px 2px rgba(0,0,0,.18), 0 8px 24px -12px rgba(0,0,0,.35) }
+body[data-tema="acik"]{ --golge:0 1px 2px rgba(16,24,40,.06), 0 10px 28px -16px rgba(16,24,40,.25) }
+
+header{backdrop-filter:saturate(1.2) blur(8px)}
+.kart,.soru-alan,.palet,.skor div,.ozet div,details,.flashcard{box-shadow:var(--golge)}
+.kart,.ozet div{transition:transform var(--gecis),border-color var(--gecis),box-shadow var(--gecis)}
+.kart:hover{transform:translateY(-2px)}
+button{transition:transform 120ms ease,background var(--gecis),border-color var(--gecis),color var(--gecis),filter var(--gecis)}
+button:active:not(:disabled){transform:scale(.97)}
+:focus-visible{outline:2px solid var(--vurgu);outline-offset:2px;border-radius:8px}
+input,select,textarea{transition:border-color var(--gecis),box-shadow var(--gecis)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--vurgu);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--vurgu) 22%,transparent)}
+.secenek{transition:transform 120ms ease,border-color var(--gecis),background var(--gecis)}
+.secenek:hover{transform:translateX(2px)}
+.ilerleme i{transition:width .35s cubic-bezier(.2,.8,.3,1)}
+#palet button{transition:background var(--gecis),border-color var(--gecis),transform 120ms ease}
+
+/* ekran girişi */
+.ekran.aktif{animation:ekranGir 260ms cubic-bezier(.2,.8,.3,1)}
+@keyframes ekranGir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* soru geçişi */
+.soru-alan.gecis{animation:soruGir 220ms cubic-bezier(.2,.8,.3,1)}
+@keyframes soruGir{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* doğru / yanlış geri bildirimi */
+.secenek.dogru.canli{animation:dogruNabiz 520ms cubic-bezier(.2,.8,.3,1)}
+@keyframes dogruNabiz{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.022);box-shadow:0 0 0 4px color-mix(in srgb,var(--yesil) 26%,transparent)}
+  100%{transform:scale(1);box-shadow:none}}
+.secenek.yanlis.canli{animation:yanlisSalla 320ms ease}
+@keyframes yanlisSalla{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.cozum,.ipucu-kutu,.ai-kutu{animation:kutuAc 240ms cubic-bezier(.2,.8,.3,1)}
+@keyframes kutuAc{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* konfeti */
+.konfeti-tuval{position:fixed;inset:0;pointer-events:none;z-index:60;display:none}
+
+/* bildirim balonu */
+.balon-kap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:70;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.balon{background:var(--yuzey);border:1px solid var(--cizgi);border-left:3px solid var(--vurgu);
+  color:var(--metin);border-radius:10px;padding:11px 16px;font-size:14px;box-shadow:var(--golge);
+  animation:balonGir 300ms cubic-bezier(.2,.8,.3,1);max-width:90vw}
+.balon.basari{border-left-color:var(--yesil)}
+.balon.rozet{border-left-color:var(--sari)}
+.balon.cikis{animation:balonCik 320ms ease forwards}
+@keyframes balonGir{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes balonCik{to{opacity:0;transform:translateY(10px) scale(.98)}}
+
+/* donut çizim animasyonu */
+.donut-yay{animation:yayCiz 900ms cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes yayCiz{from{stroke-dashoffset:var(--tam)}}
+
+/* flashcard çevirme */
+.flashcard{transition:transform 160ms cubic-bezier(.2,.8,.3,1),border-color var(--gecis),box-shadow var(--gecis)}
+.flashcard:active{transform:scale(.995)}
+.fc-arka{animation:kutuAc 240ms cubic-bezier(.2,.8,.3,1)}
+
+/* seri rozeti */
+.ozet div.parla{animation:parla 900ms ease}
+@keyframes parla{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--sari) 45%,transparent)}
+  100%{box-shadow:0 0 0 14px transparent}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;scroll-behavior:auto !important}
 }

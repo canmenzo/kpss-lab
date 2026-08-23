@@ -4,7 +4,9 @@ const $$ = s => [...document.querySelectorAll(s)];
 const HARF = ["A", "B", "C", "D", "E"];
 const ZOR_AD = { 1: "Kolay", 2: "Orta", 3: "Zor", 4: "Çok Zor" };
 const KOTA = { "Türkçe": .25, "Matematik": .25, "Tarih": .225, "Coğrafya": .15, "Vatandaşlık": .125 };
+const GY_DERS = ["Türkçe", "Matematik"];
 const SRS_GUN = [0, 1, 3, 7, 16, 35];
+const TEMPO_SN = 65;
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 
 const oku = (k, v) => { try { return JSON.parse(localStorage.getItem(k)) ?? v; } catch { return v; } };
@@ -15,10 +17,12 @@ let uretilen = oku("kpss_uretilen", []);
 let istat = oku("kpss_istat", {});          // { soruId: {d, y} }
 let yanlisHavuzu = oku("kpss_yanlis", []);
 let srs = oku("kpss_srs", {});              // { soruId: {n: seviye, t: sonraki zaman} }
+let kartSrs = oku("kpss_kart", {});         // { kartId: {n, t} }
 let gecmis = oku("kpss_gecmis", []);
 let gunluk = oku("kpss_gunluk", {});
 let gizli = oku("kpss_gizli", []);
-let tercih = { net: "yok", hedef: 20, tema: "koyu", ...oku("kpss_tercih", {}) };
+let tercih = { net: "yok", hedef: 20, tema: "koyu", ses: true, animasyon: true, ...oku("kpss_tercih", {}) };
+Efekt.kur(tercih);
 
 const tumBanka = () => [...window.SORU_BANKASI, ...uretilen];
 const banka = () => tumBanka().filter(s => !gizli.includes(s.id));
@@ -27,6 +31,7 @@ const karistir = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0])
 
 let S = null;      // aktif sınav
 let SONUC = null;  // son sonuç (inceleme filtresi için)
+let K = null;      // aktif kart destesi
 
 /* ---------------- ekran yönetimi ---------------- */
 function ekranGoster(id) {
@@ -39,14 +44,19 @@ function ekranGoster(id) {
   if (id === "istatistik") istatistikCiz();
   if (id === "ev") evTazele();
   if (id === "ai") aiTazele();
+  if (id === "kart") kartOzetCiz();
+  if (id === "puan") puanCiz();
   window.scrollTo(0, 0);
 }
 $$("nav button[data-ekran]").forEach(b => b.onclick = () => ekranGoster(b.dataset.ekran));
+$("#logo").onclick = () => ekranGoster("ev");
 
 /* ---------------- tema ---------------- */
 function temaUygula() {
   document.body.dataset.tema = tercih.tema;
   $("#tema-btn").textContent = tercih.tema === "koyu" ? "Açık tema" : "Koyu tema";
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = tercih.tema === "koyu" ? "#0f1117" : "#f4f6fb";
 }
 $("#tema-btn").onclick = () => {
   tercih.tema = tercih.tema === "koyu" ? "acik" : "koyu";
@@ -101,7 +111,7 @@ $("#btn-deneme").onclick = () => {
   if (!zor.length) return alert("En az bir zorluk seviyesi seç.");
   const havuz = banka().filter(s => (!ders || s.ders === ders) && zor.includes(s.zorluk));
   if (!havuz.length) return alert("Bu filtreye uyan soru yok. AI Lab'den üretebilirsin.");
-  baslat("deneme", karistir(havuz).slice(0, adet), +$("#ev-sure").value, ders || "Karışık");
+  baslat("deneme", karistir(havuz).slice(0, adet), +$("#ev-sure").value, ders || "Karışık", $("#ev-tempo").checked);
 };
 
 $("#btn-format").onclick = () => {
@@ -121,7 +131,7 @@ $("#btn-format").onclick = () => {
   }
   if (!secilen.length) return alert("Seçilen zorlukta soru yok.");
   if (secilen.length < adet) alert(`Bankada bu filtreye uyan ${secilen.length} soru var; deneme o kadar soruyla başlıyor. AI Lab'den soru üreterek bankayı büyütebilirsin.`);
-  baslat("deneme", karistir(secilen), Math.round(secilen.length * 13 / 12), "KPSS Formatı");
+  baslat("deneme", karistir(secilen), Math.round(secilen.length * 13 / 12), "KPSS Formatı", $("#fmt-tempo").checked);
 };
 
 $("#btn-calis").onclick = () => {
@@ -129,39 +139,52 @@ $("#btn-calis").onclick = () => {
   if (!zor.length) return alert("En az bir zorluk seviyesi seç.");
   const havuz = banka().filter(s => s.ders === ders && (!konu || s.konu === konu) && zor.includes(s.zorluk));
   if (!havuz.length) return alert("Bu filtreye uyan soru yok. AI Lab'den üretebilirsin.");
-  baslat("calis", karistir(havuz), 0, ders + (konu ? " · " + konu : ""));
+  baslat("calis", karistir(havuz), 0, ders + (konu ? " · " + konu : ""), false);
 };
 
 $("#btn-tekrar").onclick = () => {
   const havuz = tekrarBekleyen();
   if (!havuz.length) return alert("Şu an tekrar zamanı gelen soru yok. Deneme çözdükçe burası dolar.");
-  baslat("calis", karistir(havuz), 0, "Akıllı Tekrar");
+  baslat("calis", karistir(havuz), 0, "Akıllı Tekrar", false);
 };
 
 $("#btn-yanlis").onclick = () => {
   const havuz = banka().filter(s => yanlisHavuzu.includes(s.id));
   if (!havuz.length) return alert("Yanlış havuzun boş. Önce bir deneme çöz.");
-  baslat("calis", karistir(havuz), 0, "Yanlışlarım");
+  baslat("calis", karistir(havuz), 0, "Yanlışlarım", false);
 };
 
 /* ---------------- sınav ---------------- */
-function baslat(mod, sorular, sureDk, baslik) {
+function baslat(mod, sorular, sureDk, baslik, tempo) {
   S = {
-    mod, sorular, idx: 0, cevap: {}, isaret: {}, sure: {}, bitti: false,
-    timer: null, kalan: sureDk * 60, basla: Date.now(), acilis: Date.now(), baslik
+    mod, sorular, idx: 0, cevap: {}, isaret: {}, sure: {}, bitti: false, timer: null,
+    kalan: sureDk * 60, tempo: !!tempo, soruKalan: TEMPO_SN, basla: Date.now(), acilis: Date.now(), baslik
   };
+  seri = 0;
   $("#sinav-mod").textContent = mod === "deneme" ? "Deneme" : "Çalışma";
   $("#sinav-ders").textContent = baslik;
   $("#soru-toplam").textContent = sorular.length;
   $("#btn-bitir").textContent = mod === "deneme" ? "Sınavı Bitir" : "Bitir ve Değerlendir";
+  $("#tempo").hidden = !tempo;
+  $("#sayac").textContent = sureDk > 0 ? "" : "";
 
-  if (sureDk > 0) {
-    sayacYaz();
+  if (sureDk > 0) sayacYaz();
+  if (sureDk > 0 || tempo) {
     S.timer = setInterval(() => {
-      S.kalan--; sayacYaz();
-      if (S.kalan <= 0) { clearInterval(S.timer); alert("Süre doldu."); bitir(); }
+      if (sureDk > 0) {
+        S.kalan--; sayacYaz();
+        if (S.kalan <= 0) { clearInterval(S.timer); alert("Süre doldu."); return bitir(); }
+      }
+      if (S.tempo) {
+        S.soruKalan--;
+        tempoYaz();
+        if (S.soruKalan <= 0) {
+          if (S.idx < S.sorular.length - 1) git(S.idx + 1);
+          else { clearInterval(S.timer); alert("Son sorunun da süresi doldu."); return bitir(); }
+        }
+      }
     }, 1000);
-  } else $("#sayac").textContent = "";
+  }
 
   ekranGoster("sinav");
   soruGoster();
@@ -171,12 +194,17 @@ function sayacYaz() {
   const el = $("#sayac"); el.textContent = `${m}:${s}`;
   el.classList.toggle("kritik", S.kalan <= 60);
 }
+function tempoYaz() {
+  const el = $("#tempo");
+  el.textContent = "Bu soru: " + S.soruKalan + " sn";
+  el.classList.toggle("kritik", S.soruKalan <= 10);
+}
 function sureIsle() {
   const q = S.sorular[S.idx];
   S.sure[q.id] = (S.sure[q.id] || 0) + (Date.now() - S.acilis);
   S.acilis = Date.now();
 }
-function git(i) { sureIsle(); S.idx = i; soruGoster(); }
+function git(i) { sureIsle(); S.idx = i; S.soruKalan = TEMPO_SN; soruGoster(); }
 
 function soruGoster() {
   const q = S.sorular[S.idx];
@@ -185,6 +213,10 @@ function soruGoster() {
   const zEl = $("#soru-zorluk");
   zEl.textContent = ZOR_AD[q.zorluk]; zEl.dataset.z = q.zorluk;
   $("#soru-metin").textContent = q.soru;
+  const gEl = $("#soru-gorsel");
+  gEl.hidden = !q.gorsel;
+  gEl.innerHTML = q.gorsel || "";
+  if (S.tempo) tempoYaz();
 
   const verilen = S.cevap[q.id];
   const acik = S.mod === "calis" && verilen !== undefined;
@@ -212,24 +244,55 @@ function soruGoster() {
   $("#btn-sonraki").textContent = S.idx === S.sorular.length - 1 ? "Bitir" : "Sonraki →";
   $("#ilerleme-bar").style.width = (Object.values(S.cevap).filter(v => v !== undefined).length / S.sorular.length * 100) + "%";
   paletCiz();
+  if (S.sonIdx !== S.idx) {
+    S.sonIdx = S.idx;
+    const el = $(".soru-alan");
+    el.classList.remove("gecis"); void el.offsetWidth; el.classList.add("gecis");
+  }
 }
 
 function cevapla(i) {
   const q = S.sorular[S.idx];
+  let geribildirim = null;
   if (S.mod === "calis") {
     if (S.cevap[q.id] !== undefined) return;   // çalışma modunda cevap kilitlenir
     S.cevap[q.id] = i;
-    kaydet(q, i === q.dogru);
+    geribildirim = i === q.dogru;
+    kaydet(q, geribildirim);
   } else {
     S.cevap[q.id] = S.cevap[q.id] === i ? undefined : i;  // aynı şıkka basınca iptal
+    Efekt.cal("sec");
   }
   soruGoster();
+  if (geribildirim !== null) {
+    Efekt.cal(geribildirim ? "dogru" : "yanlis");
+    const hedef = $(`#secenekler .secenek[data-i="${geribildirim ? q.dogru : i}"]`);
+    if (hedef) { hedef.classList.add("canli"); setTimeout(() => hedef.classList.remove("canli"), 600); }
+    if (geribildirim) seriKontrol(); else seri = 0;
+  }
+}
+
+// arka arkaya doğru sayısı — 5'te bir küçük kutlama
+let seri = 0;
+function seriKontrol() {
+  seri++;
+  if (seri % 5 === 0) {
+    Efekt.cal("rozet");
+    Efekt.konfeti(.45);
+    Efekt.balon(`Üst üste ${seri} doğru`, "basari");
+  }
 }
 
 function gunlukArtir() {
   const g = bugun();
-  gunluk[g] = (gunluk[g] || 0) + 1;
+  const onceki = gunluk[g] || 0;
+  gunluk[g] = onceki + 1;
   yaz("kpss_gunluk", gunluk);
+  if (onceki < tercih.hedef && gunluk[g] >= tercih.hedef) {
+    Efekt.cal("rozet"); Efekt.konfeti(.8);
+    const s = seriHesapla();
+    Efekt.balon(`Günlük hedefin tamam: ${tercih.hedef} soru` + (s > 1 ? ` · ${s} günlük seri` : ""), "rozet");
+  }
 }
 function kaydet(q, dogruMu) {
   const r = istat[q.id] || { d: 0, y: 0 };
@@ -299,14 +362,14 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------------- sonuç ---------------- */
-function donut(yuzde) {
+function donut(yuzde, altYazi, ustYazi) {
   const c = 2 * Math.PI * 52;
-  return `<svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Başarı %${yuzde}">
+  return `<svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="${altYazi} ${ustYazi}">
     <circle cx="70" cy="70" r="52" fill="none" stroke="var(--yuzey2)" stroke-width="14"/>
-    <circle cx="70" cy="70" r="52" fill="none" stroke="var(--vurgu)" stroke-width="14" stroke-linecap="round"
-      stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - yuzde / 100)}" transform="rotate(-90 70 70)"/>
-    <text x="70" y="66" text-anchor="middle" font-size="30" font-weight="700" fill="var(--metin)">%${yuzde}</text>
-    <text x="70" y="88" text-anchor="middle" font-size="12" fill="var(--soluk)">başarı</text>
+    <circle class="donut-yay" style="--tam:${c}" cx="70" cy="70" r="52" fill="none" stroke="var(--vurgu)" stroke-width="14" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - Math.max(0, Math.min(100, yuzde)) / 100)}" transform="rotate(-90 70 70)"/>
+    <text x="70" y="66" text-anchor="middle" font-size="28" font-weight="700" fill="var(--metin)">${ustYazi}</text>
+    <text x="70" y="88" text-anchor="middle" font-size="12" fill="var(--soluk)">${altYazi}</text>
   </svg>`;
 }
 
@@ -326,23 +389,32 @@ function bitir() {
   const net = tercih.net === "dortbir" ? d - y / 4 : d;
   const gecenSn = Math.round((Date.now() - S.basla) / 1000);
 
-  gecmis.push({ t: Date.now(), ad: S.baslik, mod: S.mod, d, y, b, net, toplam: sorular.length, sure: gecenSn });
+  const gruplar = {};
+  sorular.forEach(q => {
+    const g = gruplar[q.ders] || (gruplar[q.ders] = { d: 0, y: 0, t: 0 });
+    g.t++;
+    if (cevap[q.id] === q.dogru) g.d++;
+    else if (cevap[q.id] !== undefined) g.y++;
+  });
+  const dersNet = {}, dersSoru = {};
+  Object.entries(gruplar).forEach(([k, g]) => {
+    dersNet[k] = tercih.net === "dortbir" ? g.d - g.y / 4 : g.d;
+    dersSoru[k] = g.t;
+  });
+
+  gecmis.push({ t: Date.now(), ad: S.baslik, mod: S.mod, d, y, b, net, toplam: sorular.length, sure: gecenSn, dersNet, dersSoru });
   if (gecmis.length > 100) gecmis = gecmis.slice(-100);
   yaz("kpss_gecmis", gecmis);
 
-  $("#donut").innerHTML = donut(yuzde);
+  $("#donut").innerHTML = donut(yuzde, "başarı", "%" + yuzde);
   $("#skor").innerHTML = `
-    <div class="iyi"><strong>${d}</strong><small>doğru</small></div>
-    <div class="kotu"><strong>${y}</strong><small>yanlış</small></div>
-    <div><strong>${b}</strong><small>boş</small></div>
-    <div><strong>${net % 1 ? net.toFixed(2) : net}</strong><small>net</small></div>
+    <div class="iyi"><strong data-h="${d}">0</strong><small>doğru</small></div>
+    <div class="kotu"><strong data-h="${y}">0</strong><small>yanlış</small></div>
+    <div><strong data-h="${b}">0</strong><small>boş</small></div>
+    <div><strong data-h="${net}">0</strong><small>net</small></div>
     <div><strong>${Math.floor(gecenSn / 60)}dk</strong><small>süre</small></div>`;
+  $$("#skor strong[data-h]").forEach(el => Efekt.sayacAnimasyon(el, +el.dataset.h));
 
-  const gruplar = {};
-  sorular.forEach(q => {
-    const g = gruplar[q.ders] || (gruplar[q.ders] = { d: 0, t: 0 });
-    g.t++; if (cevap[q.id] === q.dogru) g.d++;
-  });
   $("#ders-tablo").innerHTML = tabloCiz(gruplar, "Ders");
 
   const zayif = {};
@@ -367,7 +439,7 @@ function bitir() {
   const yavas = Object.entries(konuSure).map(([k, o]) => [k, Math.round(o.ms / o.n / 1000)])
     .sort((a, c) => c[1] - a[1]).slice(0, 5);
   $("#sure-analiz").innerHTML =
-    `<p class="rakam">Soru başına ortalama <span>${ortSn}</span> saniye${tercih.net === "yok" ? "" : ""} · gerçek KPSS'de ortalama 65 saniyedir.</p>` +
+    `<p class="rakam">Soru başına ortalama <span>${ortSn}</span> saniye · gerçek KPSS'de ortalama 65 saniyedir.</p>` +
     (yavas.length ? "<ul>" + yavas.map(([k, sn]) => `<li>${esc(k)} — soru başına <b>${sn} sn</b></li>`).join("") + "</ul>" : "");
 
   SONUC = { sorular, cevap, sure };
@@ -378,6 +450,13 @@ function bitir() {
 
   S = null;
   ekranGoster("sonuc");
+
+  Efekt.cal("bitis");
+  Efekt.konfeti(yuzde >= 80 ? 1.4 : yuzde >= 50 ? 1 : .5);
+  const enIyi = Math.max(0, ...gecmis.slice(0, -1).filter(g => g.toplam >= 5).map(g => Math.round(g.d / g.toplam * 100)));
+  if (sorular.length >= 5 && yuzde > enIyi && gecmis.length > 1)
+    setTimeout(() => Efekt.balon(`Yeni rekor: %${yuzde} başarı`, "rozet"), 500);
+  else if (yuzde >= 80) setTimeout(() => Efekt.balon(`Harika deneme: %${yuzde}`, "basari"), 500);
 }
 
 function incelemeCiz(filtre) {
@@ -397,6 +476,7 @@ function incelemeCiz(filtre) {
     return `<details data-sonuc="${sonuc}">
       <summary>${sorular.indexOf(q) + 1}. ${rozet} — ${esc(q.ders)} · ${esc(q.konu)} · ${ZOR_AD[q.zorluk]} · ${sn} sn</summary>
       <div class="soru-metin">${esc(q.soru)}</div>
+      ${q.gorsel ? `<div class="gorsel">${q.gorsel}</div>` : ""}
       <div class="secenekler">${q.secenekler.map((m, j) =>
         `<div class="secenek ${j === q.dogru ? "dogru" : j === v ? "yanlis" : ""}"><b>${HARF[j]}</b><span>${esc(m)}</span></div>`).join("")}</div>
       ${q.cozum ? `<div class="cozum"><b>Çözüm</b>\n${esc(q.cozum)}</div>` : ""}
@@ -413,7 +493,7 @@ $("#btn-ev").onclick = () => ekranGoster("ev");
 $("#btn-yanlislari-coz").onclick = () => {
   const havuz = SONUC.sorular.filter(q => SONUC.cevap[q.id] !== q.dogru);
   if (!havuz.length) return;
-  baslat("calis", karistir(havuz), 0, "Bu denemenin yanlışları");
+  baslat("calis", karistir(havuz), 0, "Bu denemenin yanlışları", false);
 };
 $("#btn-ai-yorum").onclick = async () => {
   const el = $("#ai-yorum");
@@ -423,11 +503,10 @@ $("#btn-ai-yorum").onclick = async () => {
 };
 function sonucOzeti() {
   const { sorular, cevap, sure } = SONUC;
-  const satir = sorular.map(q => {
+  return `Toplam ${sorular.length} soru.\n` + sorular.map(q => {
     const v = cevap[q.id];
     return `${q.ders}/${q.konu} (${ZOR_AD[q.zorluk]}): ${v === undefined ? "boş" : v === q.dogru ? "doğru" : "yanlış"}, ${Math.round((sure[q.id] || 0) / 1000)} sn`;
-  });
-  return `Toplam ${sorular.length} soru.\n` + satir.join("\n");
+  }).join("\n");
 }
 
 function tabloCiz(gruplar, baslik) {
@@ -447,27 +526,24 @@ function istatistikCiz() {
   const topD = kayit.reduce((t, [, r]) => t + r.d, 0);
   const topY = kayit.reduce((t, [, r]) => t + r.y, 0);
   const top = topD + topY;
-  const bugunSayi = gunluk[bugun()] || 0;
   $("#genel-skor").innerHTML = `
     <div><strong>${top}</strong><small>çözülen soru</small></div>
     <div class="iyi"><strong>${topD}</strong><small>doğru</small></div>
     <div class="kotu"><strong>${topY}</strong><small>yanlış</small></div>
     <div><strong>%${top ? Math.round(topD / top * 100) : 0}</strong><small>genel başarı</small></div>
-    <div><strong>${bugunSayi}/${tercih.hedef}</strong><small>günlük hedef</small></div>
+    <div><strong>${gunluk[bugun()] || 0}/${tercih.hedef}</strong><small>günlük hedef</small></div>
     <div><strong>${seriHesapla()}</strong><small>gün seri</small></div>`;
 
   $("#grafik").innerHTML = grafikCiz();
 
   const idx = Object.fromEntries(tumBanka().map(s => [s.id, s]));
-  const dersG = {}, konuG = {}, zorG = {};
+  const dersG = {}, zorG = {};
   kayit.forEach(([id, r]) => {
     const q = idx[id]; if (!q) return;
     const g = dersG[q.ders] || (dersG[q.ders] = { d: 0, t: 0 });
     g.d += r.d; g.t += r.d + r.y;
     const z = zorG[ZOR_AD[q.zorluk]] || (zorG[ZOR_AD[q.zorluk]] = { d: 0, t: 0 });
     z.d += r.d; z.t += r.d + r.y;
-    const k = q.ders + " · " + q.konu;
-    konuG[k] = (konuG[k] || 0) + r.y;
   });
   $("#ist-ders").innerHTML = tabloCiz(dersG, "Ders");
   $("#ist-zorluk").innerHTML = tabloCiz(zorG, "Seviye");
@@ -505,23 +581,23 @@ function grafikCiz() {
     const yz = Math.round(g.d / g.toplam * 100);
     return [x, H - P - (yz / 100) * (H - 2 * P), yz];
   });
-  const cizgi = nokta.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${[0, 25, 50, 75, 100].map(v => {
       const y = H - P - (v / 100) * (H - 2 * P);
       return `<line x1="${P}" y1="${y}" x2="${W - P}" y2="${y}" stroke="var(--cizgi)" stroke-width="1"/>
               <text x="4" y="${y + 4}" font-size="10" fill="var(--soluk)">${v}</text>`;
     }).join("")}
-    <polyline points="${cizgi}" fill="none" stroke="var(--vurgu)" stroke-width="2.5" stroke-linejoin="round"/>
+    <polyline points="${nokta.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")}"
+      fill="none" stroke="var(--vurgu)" stroke-width="2.5" stroke-linejoin="round"/>
     ${nokta.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--vurgu)"><title>%${p[2]}</title></circle>`).join("")}
   </svg>`;
 }
 
 $("#btn-sifirla").onclick = () => {
   if (!confirm("Tüm istatistikler, geçmiş, tekrar planı ve yanlış havuzu silinsin mi? Üretilen sorular kalır.")) return;
-  istat = {}; yanlisHavuzu = []; srs = {}; gecmis = []; gunluk = {};
-  ["kpss_istat", "kpss_yanlis", "kpss_srs", "kpss_gecmis", "kpss_gunluk"].forEach((k, i) =>
-    yaz(k, [istat, yanlisHavuzu, srs, gecmis, gunluk][i]));
+  istat = {}; yanlisHavuzu = []; srs = {}; gecmis = []; gunluk = {}; kartSrs = {};
+  yaz("kpss_istat", istat); yaz("kpss_yanlis", yanlisHavuzu); yaz("kpss_srs", srs);
+  yaz("kpss_gecmis", gecmis); yaz("kpss_gunluk", gunluk); yaz("kpss_kart", kartSrs);
   istatistikCiz(); evTazele();
 };
 $("#btn-ai-koc").onclick = async () => {
@@ -543,6 +619,118 @@ function kocOzeti() {
   const son = gecmis.slice(-5).map(g => `${new Date(g.t).toLocaleDateString("tr-TR")} ${g.ad}: ${g.d}D/${g.y}Y/${g.b}B, ${Math.floor(g.sure / 60)} dk`).join("\n");
   return `DERS BAZLI BAŞARI:\n${ders || "veri yok"}\n\nEN ÇOK YANLIŞ KONULAR:\n${zayif || "veri yok"}\n\nSON DENEMELER:\n${son || "veri yok"}\n\nGünlük hedefi: ${tercih.hedef} soru. Günlük seri: ${seriHesapla()} gün.`;
 }
+
+/* ---------------- kartlar ---------------- */
+const kartlar = () => window.KARTLAR || [];
+function kartOzetCiz() {
+  const kat = [...new Set(kartlar().map(k => k.kategori))];
+  secenekDoldur($("#kart-kategori"), kat, "Tüm kategoriler");
+  const satir = {};
+  kartlar().forEach(k => {
+    const g = satir[k.kategori] || (satir[k.kategori] = { d: 0, t: 0 });
+    g.t++; if ((kartSrs[k.id]?.n || 0) >= 2) g.d++;
+  });
+  $("#kart-ozet").innerHTML = "<h3>Kategori durumu</h3>" +
+    `<table><tr><th>Kategori</th><th>Öğrenildi</th><th>Oran</th><th></th></tr>` +
+    Object.entries(satir).map(([k, g]) => {
+      const p = Math.round(g.d / g.t * 100);
+      return `<tr><td>${esc(k)}</td><td>${g.d}/${g.t}</td><td>%${p}</td>
+        <td><div class="bar"><i style="width:${p}%"></i></div></td></tr>`;
+    }).join("") + "</table>" +
+    "<p class='aciklama'>Bir kartı iki kez üst üste bildiğinde \"öğrenildi\" sayılır.</p>";
+}
+$("#btn-kart-basla").onclick = () => {
+  const kat = $("#kart-kategori").value;
+  const deste = karistir(kartlar().filter(k => !kat || k.kategori === kat));
+  if (!deste.length) return alert("Bu kategoride kart yok.");
+  K = { kuyruk: deste, bilinen: 0, toplam: deste.length, acik: false };
+  $("#kart-alan").hidden = false;
+  kartGoster();
+};
+$("#btn-kart-bitir").onclick = () => { K = null; $("#kart-alan").hidden = true; kartOzetCiz(); };
+function kartGoster() {
+  const k = K.kuyruk[0];
+  if (!k) {
+    const toplam = K.toplam;
+    $("#kart-alan").hidden = true; K = null; kartOzetCiz();
+    Efekt.cal("bitis"); Efekt.konfeti(1);
+    return Efekt.balon(`Deste bitti: ${toplam} kart`, "rozet");
+  }
+  K.acik = false;
+  $("#kart-kat").textContent = k.kategori;
+  $("#kart-ilerleme").textContent = `kalan ${K.kuyruk.length} · bilinen ${K.bilinen}/${K.toplam}`;
+  $("#fc-on").textContent = k.on;
+  $("#fc-arka").textContent = k.arka;
+  $("#fc-arka").hidden = true;
+  $("#fc-ipucu").hidden = false;
+  $("#kart-butonlar").hidden = true;
+}
+$("#flashcard").onclick = () => {
+  if (!K || K.acik) return;
+  K.acik = true;
+  $("#fc-arka").hidden = false;
+  $("#fc-ipucu").hidden = true;
+  $("#kart-butonlar").hidden = false;
+};
+function kartCevap(bildi) {
+  if (!K || !K.acik) return;
+  const k = K.kuyruk.shift();
+  const s = kartSrs[k.id] || { n: 0, t: 0 };
+  s.n = bildi ? Math.min(s.n + 1, SRS_GUN.length - 1) : 0;
+  s.t = Date.now() + (bildi ? SRS_GUN[s.n] * 864e5 : 6e5);
+  kartSrs[k.id] = s; yaz("kpss_kart", kartSrs);
+  if (bildi) { K.bilinen++; Efekt.cal("kart"); } else { K.kuyruk.push(k); Efekt.cal("yanlis"); }
+  kartGoster();
+}
+$("#btn-kart-bildim").onclick = () => kartCevap(true);
+$("#btn-kart-bilmedim").onclick = () => kartCevap(false);
+
+/* ---------------- puan hesaplayıcı ---------------- */
+const puanTahmin = net => Math.max(30, Math.min(100, 39 + 0.5 * net));
+function puanCiz() {
+  const gy = Math.max(0, Math.min(60, +$("#pn-gy").value || 0));
+  const gk = Math.max(0, Math.min(60, +$("#pn-gk").value || 0));
+  const net = gy + gk;
+  const p = puanTahmin(net);
+  $("#puan-donut").innerHTML = donut((p - 30) / 70 * 100, "tahmini P3", p.toFixed(1));
+  $("#puan-skor").innerHTML = `
+    <div><strong>${gy}</strong><small>GY neti</small></div>
+    <div><strong>${gk}</strong><small>GK neti</small></div>
+    <div><strong>${net}</strong><small>toplam net</small></div>
+    <div><strong>${p.toFixed(1)}</strong><small>tahmini puan</small></div>`;
+
+  const hedef = +$("#pn-hedef").value || 0;
+  const gerekli = (hedef - 39) * 2;
+  const fark = gerekli - net;
+  $("#hedef-sonuc").innerHTML = gerekli > 120
+    ? `<b>${hedef} puan</b>\n120 netin tamamı bile bu tahmine göre yaklaşık ${puanTahmin(120).toFixed(0)} puan getirir. Hedefi biraz aşağı çekmek daha gerçekçi olur.`
+    : `<b>${hedef} puan için gereken net: ${Math.max(0, gerekli).toFixed(1)}</b>\n` +
+      (fark <= 0
+        ? `Şu anki netinle hedefin üzerindesin (${Math.abs(fark).toFixed(1)} net fazlan var).`
+        : `${fark.toFixed(1)} net daha gerekiyor. Bu, günde 20 soru çözümüyle ortalama ${Math.ceil(fark / 2)} haftalık bir mesafe demek.`);
+
+  let t = `<table><tr><th>Toplam net</th><th>Tahmini P3</th><th></th></tr>`;
+  for (let n = 20; n <= 120; n += 10) {
+    const pp = puanTahmin(n);
+    t += `<tr${Math.abs(n - net) < 5 ? ' class="simdiki"' : ""}><td>${n}</td><td>${pp.toFixed(1)}</td>
+      <td><div class="bar"><i style="width:${(pp - 30) / 70 * 100}%"></i></div></td></tr>`;
+  }
+  $("#puan-tablo").innerHTML = t + "</table>";
+}
+["#pn-gy", "#pn-gk", "#pn-hedef"].forEach(s => $(s).oninput = puanCiz);
+$("#btn-son-denemeden").onclick = () => {
+  const son = [...gecmis].reverse().find(g => g.dersNet && g.dersSoru);
+  if (!son) return alert("Ders bazlı net kaydı olan bir deneme bulunamadı. Bir deneme çöz, sonra dene.");
+  // Deneme kaç soruluk olursa olsun, GY ve GK netlerini 60'ar soruluk gerçek sınava ölçekle
+  let gyNet = 0, gyAdet = 0, gkNet = 0, gkAdet = 0;
+  Object.entries(son.dersNet).forEach(([d, n]) => {
+    if (GY_DERS.includes(d)) { gyNet += n; gyAdet += son.dersSoru[d]; }
+    else { gkNet += n; gkAdet += son.dersSoru[d]; }
+  });
+  $("#pn-gy").value = gyAdet ? Math.min(60, +(gyNet / gyAdet * 60).toFixed(2)) : 0;
+  $("#pn-gk").value = gkAdet ? Math.min(60, +(gkNet / gkAdet * 60).toFixed(2)) : 0;
+  puanCiz();
+};
 
 /* ---------------- AI Lab ---------------- */
 function aiTazele() {
@@ -596,7 +784,7 @@ $("#btn-uret").onclick = () => aiCalistir("Sorular üretiliyor", async dEl => {
 $("#btn-zayif-uret").onclick = () => aiCalistir("Zayıf konulardan soru üretiliyor", async dEl => {
   const z = zayifKonular().slice(0, 3);
   if (!z.length) throw new Error("Önce birkaç deneme çöz ki zayıf konuların belirlensin.");
-  const [ders, konu] = z[0][0].split(" · ");
+  const ders = z[0][0].split(" · ")[0];
   sorulariEkle(await AI.uret({ ders, konu: z.map(x => x[0].split(" · ")[1]).join(", "), zorluk: 3, adet: 5 }), dEl);
 });
 $("#btn-uretilen-indir").onclick = () => indir(uretilen, "kpss-uretilen-sorular.json");
@@ -621,6 +809,8 @@ function ayarYukle() {
   $("#ay-key").value = a.key;
   $("#ay-net").value = tercih.net;
   $("#ay-hedef").value = tercih.hedef;
+  $("#ay-ses").checked = tercih.ses;
+  $("#ay-animasyon").checked = tercih.animasyon;
 }
 $("#ay-saglayici").onchange = e => $("#ay-model").value = AI.varsayilanModel(e.target.value);
 $("#btn-ayar-kaydet").onclick = () => {
@@ -631,12 +821,16 @@ $("#btn-ayar-kaydet").onclick = () => {
 $("#btn-tercih-kaydet").onclick = () => {
   tercih.net = $("#ay-net").value;
   tercih.hedef = +$("#ay-hedef").value;
+  tercih.ses = $("#ay-ses").checked;
+  tercih.animasyon = $("#ay-animasyon").checked;
   yaz("kpss_tercih", tercih);
+  Efekt.kur(tercih);
   durum($("#tercih-durum"), "Kaydedildi.", "ok");
+  if (tercih.ses) Efekt.cal("kart");
 };
 $("#btn-yedek-al").onclick = () => indir({
-  surum: 2, tarih: new Date().toISOString(),
-  uretilen, istat, yanlisHavuzu, srs, gecmis, gunluk, gizli, tercih
+  surum: 3, tarih: new Date().toISOString(),
+  uretilen, istat, yanlisHavuzu, srs, kartSrs, gecmis, gunluk, gizli, tercih
 }, "kpss-lab-yedek.json");
 $("#btn-yedek-yukle").onclick = () => $("#yedek-dosya").click();
 $("#yedek-dosya").onchange = e => {
@@ -647,11 +841,12 @@ $("#yedek-dosya").onchange = e => {
       const v = JSON.parse(fr.result);
       if (!v || typeof v !== "object") throw new Error("Geçersiz dosya");
       uretilen = v.uretilen || []; istat = v.istat || {}; yanlisHavuzu = v.yanlisHavuzu || [];
-      srs = v.srs || {}; gecmis = v.gecmis || []; gunluk = v.gunluk || {}; gizli = v.gizli || [];
+      srs = v.srs || {}; kartSrs = v.kartSrs || {}; gecmis = v.gecmis || [];
+      gunluk = v.gunluk || {}; gizli = v.gizli || [];
       tercih = { ...tercih, ...(v.tercih || {}) };
       [["kpss_uretilen", uretilen], ["kpss_istat", istat], ["kpss_yanlis", yanlisHavuzu], ["kpss_srs", srs],
-       ["kpss_gecmis", gecmis], ["kpss_gunluk", gunluk], ["kpss_gizli", gizli], ["kpss_tercih", tercih]]
-        .forEach(([k, val]) => yaz(k, val));
+       ["kpss_kart", kartSrs], ["kpss_gecmis", gecmis], ["kpss_gunluk", gunluk], ["kpss_gizli", gizli],
+       ["kpss_tercih", tercih]].forEach(([k, val]) => yaz(k, val));
       temaUygula(); ayarYukle(); evTazele();
       durum($("#veri-durum"), "Yedek yüklendi.", "ok");
     } catch (err) { durum($("#veri-durum"), "Yedek okunamadı: " + err.message, "hata"); }
@@ -665,9 +860,34 @@ $("#btn-gizli-geri").onclick = () => {
   durum($("#veri-durum"), "Gizlenen sorular geri getirildi.", "ok");
 };
 
+/* ---------------- PWA ---------------- */
+let kurulumOlayi = null;
+function pwaDurum() {
+  const el = $("#pwa-durum");
+  if (!el) return;
+  if (matchMedia("(display-mode: standalone)").matches) el.textContent = "Uygulama kurulu olarak çalışıyor.";
+  else if (location.protocol === "file:") el.textContent = "Dosya doğrudan açıldığı için kurulum yapılamıyor. Kurmak için uygulamanın bir web adresinden (https) açılması gerekir.";
+  else if (kurulumOlayi) el.textContent = "Kurulmaya hazır.";
+  else el.textContent = "Tarayıcı menüsünden \"Ana ekrana ekle\" ile kurabilirsin.";
+}
+addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); kurulumOlayi = e;
+  $("#btn-kur").hidden = false; pwaDurum();
+});
+$("#btn-kur").onclick = async () => {
+  if (!kurulumOlayi) return;
+  kurulumOlayi.prompt();
+  await kurulumOlayi.userChoice;
+  kurulumOlayi = null; $("#btn-kur").hidden = true; pwaDurum();
+};
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
 /* ---------------- başlangıç ---------------- */
 ["#ev-zorluk", "#fmt-zorluk", "#calis-zorluk"].forEach(zorlukKur);
 temaUygula();
 evTazele();
 ayarYukle();
 aiTazele();
+pwaDurum();
