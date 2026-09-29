@@ -30,8 +30,8 @@ Aralarında **tablo, grafik ve şema okuma** soruları da var (gerçek sınavdak
 
 Her soruda iki ayrı kutu:
 
-- 🧩 **Çözüm** — cevabın neden doğru, diğer şıkların neden yanlış olduğu, adım adım.
-- 💡 **Püf noktası** — o soru tipini bir daha gördüğünde işine yarayacak kalıcı taktik, kısayol ya da ezber formülü.
+- 🧩 **Çözüm**: cevabın neden doğru, diğer şıkların neden yanlış olduğu, adım adım.
+- 💡 **Püf noktası**: o soru tipini bir daha gördüğünde işine yarayacak kalıcı taktik, kısayol ya da ezber formülü.
 
 ---
 
@@ -55,7 +55,7 @@ Her soruda iki ayrı kutu:
 
 - ✅ Doğru / yanlış / boş / net + başarı halkası
 - 📈 Ders bazlı başarı tablosu ve zayıf konu listesi
-- ⏳ **Süre analizi** — soru başına ortalama saniye ve en çok vakit yediğin konular (gerçek KPSS'de ortalama 65 sn)
+- ⏳ **Süre analizi**: soru başına ortalama saniye ve en çok vakit yediğin konular (gerçek KPSS'de ortalama 65 sn)
 - 🔍 Soru soru inceleme; yalnız yanlışları / boşları filtreleme
 - 📉 Gelişim grafiği (son 12 deneme), zorluk seviyesine göre başarı, son denemeler tablosu
 - 🔥 Günlük soru hedefi ve **günlük seri** takibi
@@ -94,8 +94,8 @@ Ayarlar'dan bir API anahtarı girilince açılan kısım:
 
 1. Depoyu indir, `index.html`'i tarayıcıda aç. **275 soru hazır; AI olmadan da tam çalışır.**
 2. AI Lab için ⚙️ **Ayarlar** → sağlayıcı seç → API anahtarını yapıştır → Kaydet.
-   - 🟦 **Google Gemini** (ücretsiz katman yeterli): https://aistudio.google.com/apikey — model `gemini-2.5-flash`
-   - 🟧 **Anthropic**: https://console.anthropic.com — model `claude-sonnet-5`
+   - 🟦 **Google Gemini** (ücretsiz katman yeterli): https://aistudio.google.com/apikey, model `gemini-2.5-flash`
+   - 🟧 **Anthropic**: https://console.anthropic.com, model `claude-sonnet-5`
 
 🔒 Anahtar yalnızca tarayıcının `localStorage`ında durur, hiçbir sunucuya gönderilmez.
 
@@ -113,7 +113,7 @@ Bir adresten (localhost ya da yayınlanmış site) açıldığında PWA olarak k
 - 🎯 **Günlük soru hedefi**
 - 🔊 **Ses efektleri** ve 🎊 **animasyon / konfeti** açık-kapalı
 - 🌗 **Açık / koyu tema** (sağ üstteki düğme)
-- 💾 **Yedek indir / yedekten yükle** — tüm ilerlemeni başka bilgisayara taşı
+- 💾 **Yedek indir / yedekten yükle**: tüm ilerlemeni başka bilgisayara taşı
 - 👁️ **Gizlenen soruları geri getir**
 
 ---
@@ -154,6 +154,12 @@ Tekrar kartı eklemek için `data/kartlar.js`:
 | `efekt.js` | 🎉 ses, konfeti, sayaç animasyonları |
 | `data/*.js` | 📚 ders ders soru bankası + tekrar kartları |
 | `manifest.json`, `sw.js` | 📱 PWA (kurulum + çevrimdışı) |
+
+---
+
+## 📄 Lisans
+
+Henüz lisans dosyası yok.
 
 ---
 
