@@ -1,6 +1,8 @@
 # 🎓 KPSS Lab
 
 > Genel Yetenek – Genel Kültür çalışma uygulaması. **Kurulum yok, sunucu yok, hesap yok.** `index.html`'e çift tıkla, çalışıyor.
+>
+> 🌐 **Canlı sürüm:** https://canmenzo.com/kpss-lab/ (indirmeden kullan, telefona da kurulur)
 
 <p align="left">
   <img alt="soru" src="https://img.shields.io/badge/soru%20bankas%C4%B1-275-2ea44f?style=flat-square">
@@ -92,7 +94,7 @@ Ayarlar'dan bir API anahtarı girilince açılan kısım:
 
 ## 🚀 Kurulum
 
-1. Depoyu indir, `index.html`'i tarayıcıda aç. **275 soru hazır; AI olmadan da tam çalışır.**
+1. https://canmenzo.com/kpss-lab/ adresini aç ya da depoyu indirip `index.html`'i tarayıcıda aç. **275 soru hazır; AI olmadan da tam çalışır.**
 2. AI Lab için ⚙️ **Ayarlar** → sağlayıcı seç → API anahtarını yapıştır → Kaydet.
    - 🟦 **Google Gemini** (ücretsiz katman yeterli): https://aistudio.google.com/apikey, model `gemini-2.5-flash`
    - 🟧 **Anthropic**: https://console.anthropic.com, model `claude-sonnet-5`
@@ -103,7 +105,7 @@ Ayarlar'dan bir API anahtarı girilince açılan kısım:
 
 ### 📱 Telefona kurma
 
-Bir adresten (localhost ya da yayınlanmış site) açıldığında PWA olarak kurulur: Chrome → ⋮ → **"Uygulamayı yükle"**. Kendi ikonuyla, tam ekran açılır ve **internet olmadan** da soru çözersin.
+Bir adresten (https://canmenzo.com/kpss-lab/ ya da localhost) açıldığında PWA olarak kurulur: Chrome → ⋮ → **"Uygulamayı yükle"**. Kendi ikonuyla, tam ekran açılır ve **internet olmadan** da soru çözersin.
 
 ---
 
